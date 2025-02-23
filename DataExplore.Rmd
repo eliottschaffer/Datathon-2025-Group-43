@@ -1,0 +1,477 @@
+---
+title: "ExploreData"
+author: "Haiyun Huang"
+date: "2025-02-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+```
+
+# Import
+
+```{r}
+game <- read.csv("93182_steam_games.csv")
+```
+
+## Delete playtest version
+
+```{r}
+game %>% 
+  filter(str_detect(Name, "Playtest")) %>%
+  head(10)
+```
+
+```{r}
+game <- game %>% 
+  filter(!str_detect(Name, "Playtest"))
+```
+
+88616 left
+
+## remove reviews, email, website, url, header image, Score.rank
+
+```{r}
+game <- game %>%
+  select(-Reviews, -Website, -Support.url, -Support.email, -Header.image, -Score.rank, -Average.playtime.forever, -Average.playtime.two.weeks, -Median.playtime.forever, -Median.playtime.two.weeks, -Peak.CCU, )
+```
+
+## Convert Movies to True and False (have or not have)
+
+```{r}
+game <- game %>% 
+  mutate(across(c(Movies, Screenshots), ~ ifelse(is.na(.), 0, 1)))
+```
+
+
+## plot
+
+```{r}
+names(game)
+```
+
+```{r}
+top_languages <- game %>%
+  mutate(Supported.languages = str_remove_all(Supported.languages, "[\\[\\]']")) %>%
+  separate_rows(Supported.languages, sep = ",\\s*") %>%
+  count(Supported.languages, sort = TRUE) %>%  # Count occurrences and sort by frequency
+  slice_head(n = 10)  # Select the top 10 languages
+
+print(top_languages)  # Display the top 10 languages and their counts
+```
+
+```{r}
+df_clean <- game %>%
+  mutate(Supported.languages = str_remove_all(Supported.languages, "[\\[\\]']")) %>%  # Remove brackets and quotes
+  separate_rows(Supported.languages, sep = ",\\s*") %>%  # Split into separate rows
+  filter(Supported.languages != "")  # Remove empty values
+```
+
+```{r}
+top_10_languages <- df_clean %>%
+  count(Supported.languages, sort = TRUE) %>%
+  slice_head(n = 10) %>%
+  pull(Supported.languages)
+
+print(top_10_languages)  # Check if there are any empty strings
+```
+
+
+```{r}
+df_final <- df_clean %>%
+  mutate(is_present = 1) %>%  # Assign a 1 for presence
+  pivot_wider(names_from = Supported.languages, values_from = is_present, values_fill = list(is_present = 0)) # Create binary columns
+```
+
+```{r}
+df_final <- game %>%
+  left_join(df_final, by = colnames(game)[!(colnames(game) %in% c("Supported.languages"))]) %>%  # Join back with original columns
+  select(colnames(game), all_of(top_10_languages))  # Keep original columns + top 10 language columns
+```
+
+```{r}
+game <- df_final %>%
+  select(-Supported.languages, -Full.audio.languages, -Developers, -Publishers)
+```
+
+```{r}
+# Ensure Categories column does not contain empty strings or NA
+game_clean <- game %>%
+  filter(!is.na(Categories), Categories != "")
+
+df <- game_clean %>%
+  mutate(id = row_number()) %>%  # Add a unique identifier
+  separate_rows(Categories, sep = ",") %>%  # Split categories into multiple rows
+  mutate(value = 1) %>%  # Assign presence value
+  pivot_wider(
+    names_from = Categories, 
+    values_from = value, 
+    values_fill = list(value = 0),
+    values_fn = list(value = max)  # Ensures each row-category pair has a unique value
+  ) %>%
+  select(-id)  # Remove identifier if not needed
+
+# Print the transformed dataframe
+print(df)
+```
+
+```{r}
+# Ensure Categories column does not contain empty strings or NA
+df_clean <- df %>%
+  filter(!is.na(Genres), Genres != "")
+
+df <- df_clean %>%
+  mutate(id = row_number()) %>%  # Add a unique identifier
+  separate_rows(Genres, sep = ",") %>%  # Split categories into multiple rows
+  mutate(value = 1) %>%  # Assign presence value
+  pivot_wider(
+    names_from = Genres, 
+    values_from = value, 
+    values_fill = list(value = 0),
+    values_fn = list(value = max)  # Ensures each row-category pair has a unique value
+  ) %>%
+  select(-id)  # Remove identifier if not needed
+
+# Print the transformed dataframe
+print(df)
+```
+
+```{r}
+# Save the final dataframe as a CSV file
+write.csv(df, "game_data_clean.csv", row.names = FALSE)
+```
+
+```{r}
+df <- df %>% select(- Required.age, -Estimated.owners, -DLC.count, -Metacritic.url, -Notes, -Tags)
+```
+
+```{r}
+names(df)
+```
+
+# Combine Data
+
+```{r}
+extended_data <- read.csv("SteamSpy_fixed owners.csv")
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+head(extended_data)
+```
+
+```{r}
+extended_data <- extended_data %>% 
+  select(-name, -developer, -publisher, -score_rank, -genre, -languages)
+```
+
+```{r}
+df <- df %>% 
+  mutate(appid = AppID)%>%
+  select(-AppID)
+```
+
+```{r}
+df_joined <- left_join(extended_data, df, by = "appid")
+```
+
+
+```{r}
+df_joined
+```
+
+
+
+# further clean up
+
+```{r}
+df_joined <- na.omit(df_joined)
+```
+
+```{r}
+write.csv(df_joined, "game_data_joined.csv", row.names = FALSE)
+```
+
+```{r}
+filtered <- df_joined %>%
+  select(-appid, -positive, -negative, -userscore, -owners, -price, -initialprice, -tags, -Name, -Release.date, -Price, -About.the.game)
+```
+
+```{r}
+filtered$Language_N <- rowSums(filtered[, c("English","Simplified Chinese", "German","French","Russian","Spanish - Spain", "Japanese", "Italian", "Korean", "Traditional Chinese")], na.rm = TRUE)
+```
+
+```{r}
+filtered <- filtered %>%
+  select(-English, -`Simplified Chinese`, -German, -French, -Russian, -`Spanish - Spain`, -Japanese, -Italian, -Korean, -`Traditional Chinese`)
+```
+
+
+```{r}
+names(filtered)
+```
+
+```{r}
+head(filtered, 10)
+```
+
+
+```{r}
+filtered <- filtered %>%
+  mutate(Mac = ifelse(Mac == "True", 1, 0)) %>%
+  mutate(Windows = ifelse(Windows == "True", 1, 0)) %>%
+  mutate(Linux = ifelse(Linux == "True", 1, 0))
+```
+
+```{r}
+filtered <- na.omit(filtered)
+```
+
+
+```{r}
+names(filtered)
+```
+
+```{r}
+filtered$Platform_N <- rowSums(filtered[, c("Mac", "Windows", "Linux")], na.rm = TRUE)
+```
+
+
+
+```{r}
+library(glmnet)
+selection <- filtered %>%
+  select(-Windows, -Mac, -Linux, -ccu, -Recommendations, -Movies, -Screenshots, -Positive, -Negative)
+# Convert data to matrix
+selection[is.na(selection)] <- 0
+X <- as.matrix(selection)[,-1]
+y <- selection$n_owners  # Your dependent variable
+
+# Apply LASSO
+lasso_model <- cv.glmnet(X, y, alpha = 1)
+
+# Extract important variables
+selected_vars <- coef(lasso_model, s = "lambda.min")
+selected_vars <- rownames(selected_vars)[selected_vars[,1] != 0]
+
+# Keep only selected variables
+df_lasso_selected <- selection[, selected_vars[-1]]
+print(selected_vars[-1])
+```
+
+```{r}
+df_lasso_selected$n_owners <- selection$n_owners
+```
+
+```{r}
+df_lasso_selected
+```
+
+```{r}
+write.csv(df_lasso_selected, "lasso_selected.csv", row.names = FALSE)
+```
+
+
+# extra
+
+```{r}
+extended_data <- read.csv("SteamSpy_fixed owners.csv")
+```
+
+
+```{r}
+names(extended_data)
+```
+```{r}
+unique(extended_data$owners)
+```
+
+```{r}
+extended_data$owners <- factor(extended_data$owners, labels = c("0 .. 20,000", "20,000 .. 50,000", "50,000 .. 100,000", "100,000 .. 200,000", "200,000 .. 500,000", "500,000 .. 1,000,000", "1,000,000 .. 2,000,000", "2,000,000 .. 5,000,000", "5,000,000 .. 10,000,000", "10,000,000 .. 20,000,000", "20,000,000 .. 50,000,000", "50,000,000 .. 100,000,000", "100,000,000 .. 200,000,000"))
+```
+
+```{r}
+ggplot(extended_data, aes(y = n_owners, x = owners, group = owners, color = owners)) + geom_boxplot()
+```
+
+
+```{r}
+extended_data %>%
+  group_by(owners) %>%
+  count()
+```
+
+```{r}
+levels(extended_data$owners)[levels(extended_data$owners) %in% c("20,000 .. 50,000", "50,000 .. 100,000", "100,000 .. 200,000" )] <- "20,000 .. 200,000"
+```
+
+```{r}
+levels(extended_data$owners)[levels(extended_data$owners) %in% c("200,000 .. 500,000", "500,000 .. 1,000,000", "1,000,000 .. 2,000,000" )] <- "200,000 .. 2,000,000"
+```
+
+```{r}
+levels(extended_data$owners)[levels(extended_data$owners) %in% c("2,000,000 .. 5,000,000", "5,000,000 .. 10,000,000", "10,000,000 .. 20,000,000" )] <- "2,000,000 .. 20,000,000"
+```
+
+```{r}
+levels(extended_data$owners)[levels(extended_data$owners) %in% c("20,000,000 .. 50,000,000", "50,000,000 .. 100,000,000", "100,000,000 .. 200,000,000" )] <- "20,000,000 .. 200,000,000"
+```
+
+```{r}
+extended_data %>%
+  group_by(owners) %>%
+  count()
+```
+
+```{r}
+names(extended_data)
+```
+
+```{r}
+ex_data_select <- extended_data %>%
+  select(-name, -developer, -publisher, -score_rank, -average_2weeks, -median_2weeks, -initialprice, -tags, -languages, -genre, -positive, -negative, -userscore, -ccu, -price) 
+```
+
+```{r}
+names(ex_data_select)
+```
+
+```{r}
+df <- read.csv("game_data_clean.csv")
+```
+
+```{r}
+df <- df %>% select(- Required.age, -Estimated.owners, -DLC.count, -Metacritic.url, -Notes, -Tags)
+```
+
+```{r}
+names(df)
+```
+
+```{r}
+df <- df %>% 
+  mutate(appid = AppID)%>%
+  select(-AppID)
+```
+
+```{r}
+df_joined <- left_join(ex_data_select, df, by = "appid")
+```
+
+```{r}
+count(df_joined)
+```
+# further clean up
+
+```{r}
+df_joined <- na.omit(df_joined)
+```
+
+```{r}
+write.csv(df_joined, "joined_categorical.csv", row.names = FALSE)
+```
+
+```{r}
+names(df_joined)
+```
+
+```{r}
+filtered <- df_joined %>%
+  select( -Name, -Release.date, -Price, -About.the.game, -User.score, -Positive, -Negative, -Metacritic.score, -Recommendations, -Screenshots, -Movies)
+```
+
+```{r}
+names(filtered)
+```
+
+
+```{r}
+filtered$Language_N <- rowSums(filtered[, c("English","Simplified.Chinese", "German","French","Russian","Spanish...Spain", "Japanese", "Italian", "Korean", "Traditional.Chinese")], na.rm = TRUE)
+```
+
+
+```{r}
+filtered <- filtered %>%
+  select(-English, -`Simplified.Chinese`, -German, -French, -Russian, -`Spanish...Spain`, -Japanese, -Italian, -Korean, -`Traditional.Chinese`)
+```
+
+
+```{r}
+names(filtered)
+```
+
+```{r}
+filtered <- filtered %>%
+  mutate(Mac = ifelse(Mac == "True", 1, 0)) %>%
+  mutate(Windows = ifelse(Windows == "True", 1, 0)) %>%
+  mutate(Linux = ifelse(Linux == "True", 1, 0))
+```
+
+```{r}
+filtered <- na.omit(filtered)
+```
+
+```{r}
+filtered$Platform_N <- rowSums(filtered[, c("Mac", "Windows", "Linux")], na.rm = TRUE)
+```
+
+```{r}
+selection <- filtered %>%
+  select(-Windows, -Mac, -Linux)
+```
+
+```{r}
+names(selection)
+```
+```{r}
+write.csv(selection, "data_before_forest.csv", row.names = FALSE)
+```
+
+# random forest
+
+```{r}
+library(randomForest)
+library(caret)
+```
+```{r}
+# Load the dataset (assuming it's a CSV file)
+df <- read.csv("data_before_forest.csv")
+
+# Convert the target variable 'owners' to a categorical factor
+df$owners <- factor(df$owners, levels = c("0 .. 20,000", "20,000 .. 200,000", "200,000 .. 2,000,000", "2,000,000 .. 20,000,000", "20,000,000 .. 200,000,000"))
+
+# Remove unnecessary columns
+df <- subset(df, select = -c(appid, n_owners))
+
+```
+
+```{r}
+set.seed(42)  # For reproducibility
+trainIndex <- createDataPartition(df$owners, p = 0.8, list = FALSE)
+trainData <- df[trainIndex, ]
+testData <- df[-trainIndex, ]
+```
+
+```{r}
+set.seed(42)
+rf_model <- randomForest(owners ~ ., data = trainData, ntree = 500, mtry = 10, importance = TRUE)
+print(rf_model)
+```
+
+```{r}
+# Predict on the test set
+predictions <- predict(rf_model, testData)
+
+# Compute Confusion Matrix
+conf_matrix <- confusionMatrix(predictions, testData$owners)
+print(conf_matrix)
+```
+
+
