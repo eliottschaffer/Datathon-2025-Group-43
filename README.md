@@ -8,3 +8,9 @@ Two Random Forest analysis (one in Stata one in Python) and Two MLPs (One Tensor
 
 The final model was then embedded into a server where a user can select the game perameters and ask the model to output the expected number of players.
 All output graphs are shown in the presentation along with a demonstration of the website.
+
+Youtube Link:
+https://youtu.be/Tsz4kWWl-VI
+
+Slide Link
+https://www.canva.com/design/DAGf9DN8JcI/JmfhB802J0LQ4i7sG8ZNYw/edit?utm_content=DAGf9DN8JcI&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
