@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Owners Predictor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Game Owners Predictor</h1>
+        <form id="predictionForm">
+            <div class="numeric-inputs">
+                <h2>Numeric Features</h2>
+                
+                <div class="slider-container">
+                    <label for="median_forever">Play Time (hours):</label>
+                    <input type="range" id="median_forever" min="0" max="300" step="0.5" value="0">
+                    <span class="slider-value" id="median_forever_value">0</span>
+                </div>
+
+                <div class="slider-container">
+                    <label for="r_price">Price ($):</label>
+                    <input type="range" id="r_price" min="0" max="200" step="0.1" value="0">
+                    <span class="slider-value" id="r_price_value">0</span>
+                </div>
+
+                <div class="slider-container">
+                    <label for="Achievements">Number of Achievements:</label>
+                    <input type="range" id="Achievements" min="0" max="1000" step="1" value="0">
+                    <span class="slider-value" id="Achievements_value">0</span>
+                </div>
+
+                <div class="slider-container">
+                    <label for="Language_N">Number of Languages:</label>
+                    <input type="range" id="Language_N" min="0" max="10" step="1" value="0">
+                    <span class="slider-value" id="Language_N_value">0</span>
+                </div>
+
+                <div class="slider-container">
+                    <label for="Platform_N">Number of Platforms:</label>
+                    <input type="range" id="Platform_N" min="1" max="3" step="1" value="1">
+                    <span class="slider-value" id="Platform_N_value">1</span>
+                </div>
+            </div>
+
+            <div class="binary-inputs">
+                <h2>Game Features</h2>
+                <div class="checkbox-grid">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Steam_Trading_Cards">
+                        <label for="Steam_Trading_Cards">Steam Trading Cards</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Adventure">
+                        <label for="Adventure">Adventure</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Action">
+                        <label for="Action">Action</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Simulation">
+                        <label for="Simulation">Simulation</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Casual">
+                        <label for="Casual">Casual</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Indie">
+                        <label for="Indie">Indie</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Steam_Cloud">
+                        <label for="Steam_Cloud">Steam Cloud</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Strategy">
+                        <label for="Strategy">Strategy</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Partial_Controller_Support">
+                        <label for="Partial_Controller_Support">Partial Controller Support</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="RPG">
+                        <label for="RPG">RPG</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Full_controller_support">
+                        <label for="Full_controller_support">Full Controller Support</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Free_To_Play">
+                        <label for="Free_To_Play">Free To Play</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Steam_Achievements">
+                        <label for="Steam_Achievements">Steam Achievements</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="discount">
+                        <label for="discount">Has Discount</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Steam_Leaderboards">
+                        <label for="Steam_Leaderboards">Steam Leaderboards</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Family_Sharing">
+                        <label for="Family_Sharing">Family Sharing</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Multi_player">
+                        <label for="Multi_player">Multiplayer</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Early_Access">
+                        <label for="Early_Access">Early Access</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Stats">
+                        <label for="Stats">Stats</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Remote_Play_on_TV">
+                        <label for="Remote_Play_on_TV">Remote Play on TV</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Co_op">
+                        <label for="Co_op">Co-op</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Sports">
+                        <label for="Sports">Sports</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Steam_Workshop">
+                        <label for="Steam_Workshop">Steam Workshop</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Racing">
+                        <label for="Racing">Racing</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="Includes_level_editor">
+                        <label for="Includes_level_editor">Includes Level Editor</label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="predict-button">Predict Number of Owners</button>
+        </form>
+
+        <div id="result" class="hidden">
+            <h2>Prediction Result</h2>
+            <p id="predictionValue"></p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
