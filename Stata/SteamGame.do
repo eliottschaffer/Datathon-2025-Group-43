@@ -216,7 +216,7 @@ di "MSE = " r(mean)
 scatter n_owners owners 
 
 ***** random forest 5 - control n_owners <= 50,000
-*** MSE = 73520141
+*** MSE = 73520141 R-squared = -.08805414
 frame create train_lasso2
 frame change train_lasso2
 use "/Users/Mahiru/Documents/Stata/lasso_selected_training.dta", clear
@@ -234,7 +234,7 @@ rforest n_owners average_forever average_2weeks median_forever median_2weeks r_p
  steamvrcollectibles modsrequirehl2 adventure casual indie rpg freetoplay action strategy ///
  earlyaccess simulation racing massivelymultiplayer education gamedevelopment audioproduction ///
  gore designillustration videoproduction sexualcontent nudity webpublishing softwaretraining ///
- movie language_n platform_n, type(reg) ntree(1000) depth(10)
+ movie language_n platform_n, type(reg) depth(10)
 
 frame create test_lasso2
 frame change test_lasso2
@@ -246,16 +246,29 @@ gen error = n_owners - owners
 gen error_sq = error^2 
 sum error_sq
 di "MSE = " r(mean)
+generate residual = n_owners - owners
+summarize residual, meanonly
+scalar MSE = r(mean)^2
+generate sq_resid = residual^2
+summarize sq_resid, meanonly
+scalar MSE = r(mean)
+display "MSE = " MSE
+summarize n_owners, detail
+scalar var_y = 6.64e+07
+display "Variance of y = " var_y
+scalar R2 = 1 - (MSE/var_y)
+display "R-squared = " R2
 
 scatter n_owners owners 
 
 ***** random forest 6 - log version
-*** MSE = 75985107
+*** MSE = 75985107 R-squared = -.1456714
 frame create train_lasso3
 frame change train_lasso3
 use "/Users/Mahiru/Documents/Stata/lasso_selected_training.dta", clear
 drop if n_owners > 50000
 gen log_n_owners = log(n_owners)
+drop if log_n_owners ==.
 rforest log_n_owners average_forever average_2weeks median_forever median_2weeks r_price discount /// 
  metacriticscore achievements singleplayer familysharing steamachievements fullcontrollersupport ///
  steamtradingcards inapppurchases multiplayer onlinecoop pvp sharedsplitscreenpvp /// 
@@ -267,7 +280,8 @@ rforest log_n_owners average_forever average_2weeks median_forever median_2weeks
  steamvrcollectibles modsrequirehl2 adventure casual indie rpg freetoplay action strategy ///
  earlyaccess simulation racing massivelymultiplayer education gamedevelopment audioproduction ///
  gore designillustration videoproduction sexualcontent nudity webpublishing softwaretraining ///
- movie language_n platform_n, type(reg) depth(10) mtry(3)
+ movie language_n platform_n, type(reg) depth(10)
+frame create test_lasso3
 frame change test_lasso3
 use "/Users/Mahiru/Documents/Stata/lasso_selected_testing.dta", clear
 drop if n_owners > 50000
@@ -279,6 +293,19 @@ gen error_sq = error^2
 sum error_sq
 di "MSE = " r(mean)
 
+generate residual = n_owners - pred_n_owners
+summarize residual, detail
+scalar MSE = r(mean)^2
+generate sq_resid = residual^2
+summarize sq_resid, meanonly
+scalar MSE = r(mean)
+display "MSE = " MSE
+summarize n_owners, detail
+scalar var_y = 6.63e+07
+display "Variance of y = " var_y
+scalar R2 = 1 - (MSE/var_y)
+display "R-squared = " R2
+
 ****** random forest 7 -  cross validation ver
 *** MSE = 6989959
 frame change test_lasso3
@@ -286,6 +313,7 @@ use "/Users/Mahiru/Documents/Stata/lasso_selected.dta", clear
 gen log_n_owners = log(n_owners + 1)
 gen rand_num = runiform()
 gen train = rand_num < 0.8   // 80% training, 20% testing
+drop if log_n_owners ==.
 rforest log_n_owners average_forever average_2weeks median_forever median_2weeks r_price discount /// 
  metacriticscore achievements singleplayer familysharing steamachievements fullcontrollersupport ///
  steamtradingcards inapppurchases multiplayer onlinecoop pvp sharedsplitscreenpvp /// 
